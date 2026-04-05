@@ -9,28 +9,46 @@ import (
 	"time"
 )
 
-// Latest copies the most recently modified file from ~/Downloads to dest,
-// sanitizing the file name. Returns the path of the new file.
-func Latest(dest string) (string, error) {
+// Result holds the newest file info before copying.
+type Result struct {
+	Source string
+	Dest   string
+	Age    time.Duration
+}
+
+// Find locates the most recently modified file in ~/Downloads and returns
+// the source path, intended destination, and age of the file.
+func Find(dest string) (*Result, error) {
 	dir, err := downloadsDir()
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 
-	src, err := newestFile(dir)
+	src, modTime, err := newestFile(dir)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 
 	name := Sanitize(filepath.Base(src))
 	out := filepath.Join(dest, name)
 
-	if err := copyFile(src, out); err != nil {
-		return "", fmt.Errorf("copy %s -> %s: %w", src, out, err)
-	}
-
-	return out, nil
+	return &Result{
+		Source: src,
+		Dest:   out,
+		Age:    time.Since(modTime),
+	}, nil
 }
+
+// Copy performs the actual file copy for a Result.
+func (r *Result) Copy() error {
+	if err := copyFile(r.Source, r.Dest); err != nil {
+		return fmt.Errorf("copy %s -> %s: %w", r.Source, r.Dest, err)
+	}
+	return nil
+}
+
+// StaleThreshold is the age after which a file is considered stale.
+const StaleThreshold = 8 * time.Hour
 
 func downloadsDir() (string, error) {
 	home, err := os.UserHomeDir()
@@ -44,10 +62,10 @@ func downloadsDir() (string, error) {
 	return dir, nil
 }
 
-func newestFile(dir string) (string, error) {
+func newestFile(dir string) (string, time.Time, error) {
 	entries, err := os.ReadDir(dir)
 	if err != nil {
-		return "", fmt.Errorf("read %s: %w", dir, err)
+		return "", time.Time{}, fmt.Errorf("read %s: %w", dir, err)
 	}
 
 	var newest string
@@ -68,9 +86,9 @@ func newestFile(dir string) (string, error) {
 	}
 
 	if newest == "" {
-		return "", fmt.Errorf("no files found in %s", dir)
+		return "", time.Time{}, fmt.Errorf("no files found in %s", dir)
 	}
-	return newest, nil
+	return newest, newestTime, nil
 }
 
 func copyFile(src, dst string) error {

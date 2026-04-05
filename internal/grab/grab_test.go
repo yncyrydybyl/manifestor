@@ -10,7 +10,6 @@ import (
 func TestNewestFile(t *testing.T) {
 	dir := t.TempDir()
 
-	// Create files with different mtimes
 	older := filepath.Join(dir, "older.txt")
 	newer := filepath.Join(dir, "newer.txt")
 
@@ -18,7 +17,7 @@ func TestNewestFile(t *testing.T) {
 	time.Sleep(10 * time.Millisecond)
 	os.WriteFile(newer, []byte("new"), 0644)
 
-	got, err := newestFile(dir)
+	got, _, err := newestFile(dir)
 	if err != nil {
 		t.Fatalf("newestFile(%q) error: %v", dir, err)
 	}
@@ -27,18 +26,31 @@ func TestNewestFile(t *testing.T) {
 	}
 }
 
-func TestNewestFileSkipsDirs(t *testing.T) {
+func TestNewestFileReturnsMtime(t *testing.T) {
 	dir := t.TempDir()
 
-	// Create a subdirectory (should be skipped)
-	os.Mkdir(filepath.Join(dir, "subdir"), 0755)
-	time.Sleep(10 * time.Millisecond)
-
-	// Create a file
 	f := filepath.Join(dir, "file.txt")
 	os.WriteFile(f, []byte("content"), 0644)
 
-	got, err := newestFile(dir)
+	_, modTime, err := newestFile(dir)
+	if err != nil {
+		t.Fatalf("newestFile error: %v", err)
+	}
+	if time.Since(modTime) > 5*time.Second {
+		t.Errorf("modTime too old: %v", modTime)
+	}
+}
+
+func TestNewestFileSkipsDirs(t *testing.T) {
+	dir := t.TempDir()
+
+	os.Mkdir(filepath.Join(dir, "subdir"), 0755)
+	time.Sleep(10 * time.Millisecond)
+
+	f := filepath.Join(dir, "file.txt")
+	os.WriteFile(f, []byte("content"), 0644)
+
+	got, _, err := newestFile(dir)
 	if err != nil {
 		t.Fatalf("newestFile error: %v", err)
 	}
@@ -55,7 +67,7 @@ func TestNewestFileSkipsDotfiles(t *testing.T) {
 	visible := filepath.Join(dir, "visible.txt")
 	os.WriteFile(visible, []byte("visible"), 0644)
 
-	got, err := newestFile(dir)
+	got, _, err := newestFile(dir)
 	if err != nil {
 		t.Fatalf("newestFile error: %v", err)
 	}
@@ -67,7 +79,7 @@ func TestNewestFileSkipsDotfiles(t *testing.T) {
 func TestNewestFileEmptyDir(t *testing.T) {
 	dir := t.TempDir()
 
-	_, err := newestFile(dir)
+	_, _, err := newestFile(dir)
 	if err == nil {
 		t.Fatal("expected error for empty directory, got nil")
 	}
@@ -101,5 +113,23 @@ func TestCopyFileSourceNotFound(t *testing.T) {
 	err := copyFile(filepath.Join(dir, "nonexistent"), filepath.Join(dir, "dst"))
 	if err == nil {
 		t.Fatal("expected error for missing source, got nil")
+	}
+}
+
+func TestStaleThreshold(t *testing.T) {
+	if StaleThreshold != 8*time.Hour {
+		t.Errorf("StaleThreshold = %v, want 8h", StaleThreshold)
+	}
+}
+
+func TestResultIsStale(t *testing.T) {
+	fresh := &Result{Age: 2 * time.Hour}
+	if fresh.Age > StaleThreshold {
+		t.Error("2h-old file should not be stale")
+	}
+
+	stale := &Result{Age: 10 * time.Hour}
+	if stale.Age <= StaleThreshold {
+		t.Error("10h-old file should be stale")
 	}
 }
