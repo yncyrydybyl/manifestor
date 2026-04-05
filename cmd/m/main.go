@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/yncyrydybyl/manifestor/internal/anim"
+	"github.com/yncyrydybyl/manifestor/internal/completion"
 	"github.com/yncyrydybyl/manifestor/internal/grab"
 )
 
@@ -42,6 +43,14 @@ func main() {
 			}
 		case "--list-anims":
 			listAnims = true
+		case "completion":
+			if i+1 < len(args) {
+				printCompletion(args[i+1])
+			} else {
+				fmt.Fprintln(os.Stderr, "usage: m completion <bash|zsh|fish>")
+				os.Exit(1)
+			}
+			return
 		default:
 			if dest == "" {
 				dest = args[i]
@@ -98,6 +107,20 @@ func playAnimation(name, filename string) {
 	}
 	if a != nil {
 		a.Play(filename)
+	}
+}
+
+func printCompletion(shell string) {
+	switch shell {
+	case "bash":
+		fmt.Print(completion.Bash())
+	case "zsh":
+		fmt.Print(completion.Zsh())
+	case "fish":
+		fmt.Print(completion.Fish())
+	default:
+		fmt.Fprintf(os.Stderr, "unknown shell: %s (supported: bash, zsh, fish)\n", shell)
+		os.Exit(1)
 	}
 }
 
@@ -167,6 +190,9 @@ Options:
   -h, --help         show this help
   -v, --version      show version
 
+Commands:
+  completion <shell>   generate shell completions (bash, zsh, fish)
+
 Examples:
   m                          copy latest download here
   m ./assets                 copy latest download to ./assets
@@ -174,5 +200,10 @@ Examples:
   m --anim rainbow-beam      use a specific animation
   m --anim fire-forge .      forge it in flames
   m --no-anim                just copy, no flair
+
+Shell completions:
+  eval "$(m completion bash)"           # bash
+  eval "$(m completion zsh)"            # zsh
+  m completion fish > ~/.config/fish/completions/m.fish  # fish
 `)
 }

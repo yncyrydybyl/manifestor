@@ -78,6 +78,23 @@ To skip the check: use `mm` or `m --force`.
 → ./screenshot-2026-04-05-at-14.32.07.png
 ```
 
+## Shell completions
+
+Tab-completion for all flags and animation names.
+
+```bash
+# Bash — add to ~/.bashrc
+eval "$(m completion bash)"
+
+# Zsh — add to ~/.zshrc
+eval "$(m completion zsh)"
+
+# Fish
+m completion fish > ~/.config/fish/completions/m.fish
+```
+
+Homebrew installs completions automatically.
+
 ## Status
 
 Early alpha. Works on Linux and macOS.
