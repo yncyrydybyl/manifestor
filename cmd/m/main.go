@@ -8,7 +8,9 @@ import (
 	"strings"
 	"time"
 
+	"github.com/yncyrydybyl/manifestor/internal/anim"
 	"github.com/yncyrydybyl/manifestor/internal/grab"
+	"golang.org/x/term"
 )
 
 var version = "dev"
@@ -17,10 +19,13 @@ func main() {
 	args := os.Args[1:]
 	force := isForceMode()
 
-	// Parse flags
 	var dest string
-	for _, a := range args {
-		switch a {
+	var animName string
+	noAnim := false
+	listAnims := false
+
+	for i := 0; i < len(args); i++ {
+		switch args[i] {
 		case "--version", "-v":
 			fmt.Println("manifestor", version)
 			return
@@ -29,11 +34,27 @@ func main() {
 			return
 		case "--force", "-f":
 			force = true
+		case "--no-anim":
+			noAnim = true
+		case "--anim":
+			if i+1 >= len(args) || strings.HasPrefix(args[i+1], "-") {
+				fmt.Fprintln(os.Stderr, "error: --anim requires an animation name (use --list-anims to see available)")
+				os.Exit(1)
+			}
+			i++
+			animName = args[i]
+		case "--list-anims":
+			listAnims = true
 		default:
 			if dest == "" {
-				dest = a
+				dest = args[i]
 			}
 		}
+	}
+
+	if listAnims {
+		printAnims()
+		return
 	}
 
 	if dest == "" {
@@ -58,7 +79,40 @@ func main() {
 		os.Exit(1)
 	}
 
+	// Play animation after successful copy (only if stderr is a TTY)
+	if !noAnim && term.IsTerminal(int(os.Stderr.Fd())) {
+		name := filepath.Base(result.Dest)
+		playAnimation(animName, name)
+	}
+
 	fmt.Println(result.Dest)
+}
+
+func playAnimation(name, filename string) {
+	var a *anim.Animation
+	if name != "" {
+		a = anim.Get(name)
+		if a == nil {
+			fmt.Fprintf(os.Stderr, "unknown animation: %s (use --list-anims to see available)\n", name)
+			return
+		}
+	} else {
+		a = anim.Random()
+	}
+	if a != nil {
+		a.Play(filename)
+	}
+}
+
+func printAnims() {
+	fmt.Println("Available animations:")
+	fmt.Println()
+	for _, a := range anim.List() {
+		fmt.Printf("  %-20s %s\n", a.Name, a.Desc)
+	}
+	fmt.Println()
+	fmt.Println("Usage: m --anim <name>")
+	fmt.Println("       m --no-anim       (skip animation)")
 }
 
 // isForceMode returns true if the binary was invoked as "mm".
@@ -103,20 +157,25 @@ Usage:
 
 The most recently modified file in ~/Downloads is copied to the
 destination directory (default: current directory) with a sanitized
-file name.
+file name. A random manifestation animation plays on success.
 
 If the newest file is older than 8 hours, you'll be asked to confirm.
 To skip the check, use --force or invoke as 'mm'.
 
 Options:
-  -f, --force      skip the staleness check
-  -h, --help       show this help
-  -v, --version    show version
+  -f, --force        skip the staleness check
+  --anim <name>      play a specific animation
+  --no-anim          skip the animation
+  --list-anims       show available animations
+  -h, --help         show this help
+  -v, --version      show version
 
 Examples:
-  m                 copy latest download here
-  m ./assets        copy latest download to ./assets
-  mm                copy latest download here (no confirmation)
-  m --force ~/docs  copy to ~/docs, skip staleness check
+  m                          copy latest download here
+  m ./assets                 copy latest download to ./assets
+  mm                         force mode (no confirmation)
+  m --anim rainbow-beam      use a specific animation
+  m --anim fire-forge .      forge it in flames
+  m --no-anim                just copy, no flair
 `)
 }
