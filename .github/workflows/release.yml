@@ -10,18 +10,8 @@ permissions:
 
 jobs:
   release:
+    name: Release
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        include:
-          - goos: linux
-            goarch: amd64
-          - goos: linux
-            goarch: arm64
-          - goos: darwin
-            goarch: amd64
-          - goos: darwin
-            goarch: arm64
     steps:
       - uses: actions/checkout@v4
         with:
@@ -29,15 +19,55 @@ jobs:
       - uses: actions/setup-go@v5
         with:
           go-version-file: go.mod
-      - name: Build
-        env:
-          GOOS: ${{ matrix.goos }}
-          GOARCH: ${{ matrix.goarch }}
+
+      - name: Build all platforms
         run: |
           VERSION=${GITHUB_REF_NAME}
-          go build -ldflags "-s -w -X main.version=${VERSION}" \
-            -o manifestor-${GOOS}-${GOARCH} ./cmd/m
-      - name: Upload
+          for PAIR in linux/amd64 linux/arm64 darwin/amd64 darwin/arm64; do
+            GOOS=${PAIR%/*}
+            GOARCH=${PAIR#*/}
+            OUTPUT="manifestor-${GOOS}-${GOARCH}"
+            echo "Building ${OUTPUT}..."
+            GOOS=$GOOS GOARCH=$GOARCH go build \
+              -ldflags "-s -w -X main.version=${VERSION}" \
+              -o "${OUTPUT}" ./cmd/m
+          done
+
+      - name: Generate checksums
+        run: sha256sum manifestor-* > checksums.txt
+
+      - name: Create release
         uses: softprops/action-gh-release@v2
         with:
-          files: manifestor-*
+          generate_release_notes: true
+          files: |
+            manifestor-*
+            checksums.txt
+
+  update-homebrew:
+    name: Update Homebrew tap
+    needs: release
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Get release info
+        id: release
+        run: |
+          VERSION=${GITHUB_REF_NAME#v}
+          echo "version=${VERSION}" >> $GITHUB_OUTPUT
+          URL="https://github.com/yncyrydybyl/manifestor/archive/refs/tags/${GITHUB_REF_NAME}.tar.gz"
+          SHA=$(curl -sL "$URL" | sha256sum | cut -d' ' -f1)
+          echo "sha256=${SHA}" >> $GITHUB_OUTPUT
+
+      - name: Update tap
+        uses: peter-evans/repository-dispatch@v3
+        with:
+          token: ${{ secrets.TAP_TOKEN }}
+          repository: yncyrydybyl/homebrew-tap
+          event-type: update-formula
+          client-payload: |
+            {
+              "version": "${{ steps.release.outputs.version }}",
+              "sha256": "${{ steps.release.outputs.sha256 }}"
+            }
