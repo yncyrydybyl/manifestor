@@ -367,9 +367,9 @@
         <p>Every copy plays a random manifestation animation. Rainbow beams, portals, forging in flames.</p>
       </div>
       <div class="feature-card">
-        <div class="icon">🐚</div>
-        <h3>Shell completions</h3>
-        <p>Tab completion for bash, zsh, and fish. All flags and animation names.</p>
+        <div class="icon">🔒</div>
+        <h3>Safe by default</h3>
+        <p>Same-file guard prevents data loss. Staleness check catches stale grabs. Force mode when you mean it.</p>
       </div>
       <div class="feature-card">
         <div class="icon">🍺</div>
@@ -467,16 +467,15 @@ cd manifestor
 make install</pre>
       </div>
       <div class="install-method">
-        <h3>Shell completions</h3>
-        <pre># bash
-eval "$(m completion bash)"
+        <h3>Pick an animation</h3>
+        <pre># see all animations
+m --list-anims
 
-# zsh
-eval "$(m completion zsh)"
+# use a specific one
+m --anim fire-forge
 
-# fish
-m completion fish > \
-  ~/.config/fish/completions/m.fish</pre>
+# skip animation
+m --no-anim</pre>
       </div>
       <div class="install-method">
         <h3>Binary download</h3>
