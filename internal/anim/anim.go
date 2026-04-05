@@ -69,7 +69,7 @@ const (
 	clearLn = "\033[2K\r"
 )
 
-func fg(code int) string    { return fmt.Sprintf("\033[38;5;%dm", code) }
+func fg(code int) string     { return fmt.Sprintf("\033[38;5;%dm", code) }
 func rgb(r, g, b int) string { return fmt.Sprintf("\033[38;2;%d;%d;%dm", r, g, b) }
 
 // center pads a string to center it in the terminal.

@@ -45,11 +45,11 @@ jobs:
         run: go vet ./...
       - name: gofmt check
         run: |
-          UNFORMATTED=$(gofmt -l .)
-          if [ -n "$UNFORMATTED" ]; then
-            echo "Files need gofmt:"
-            echo "$UNFORMATTED"
-            gofmt -d .
+          gofmt -w .
+          if ! git diff --quiet; then
+            echo "Files need formatting:"
+            git diff --name-only
+            git diff
             exit 1
           fi
       - name: go mod tidy check
