@@ -10,11 +10,12 @@ class Manifestor < Formula
   def install
     system "go", "build",
            "-ldflags", "-s -w -X main.version=#{version}",
-           "-o", bin/"manifestor",
-           "./cmd/manifestor"
+           "-o", bin/"m",
+           "./cmd/m"
+    bin.install_symlink "m" => "mm"
   end
 
   test do
-    assert_match version.to_s, shell_output("#{bin}/manifestor --version")
+    assert_match version.to_s, shell_output("#{bin}/m --version")
   end
 end
