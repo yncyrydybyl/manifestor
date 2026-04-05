@@ -92,6 +92,15 @@ func newestFile(dir string) (string, time.Time, error) {
 }
 
 func copyFile(src, dst string) error {
+	srcInfo, err := os.Stat(src)
+	if err != nil {
+		return err
+	}
+	dstInfo, err := os.Stat(dst)
+	if err == nil && os.SameFile(srcInfo, dstInfo) {
+		return fmt.Errorf("source and destination are the same file: %s", src)
+	}
+
 	in, err := os.Open(src)
 	if err != nil {
 		return err

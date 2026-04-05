@@ -107,6 +107,24 @@ func TestCopyFile(t *testing.T) {
 	}
 }
 
+func TestCopyFileSameFile(t *testing.T) {
+	dir := t.TempDir()
+
+	f := filepath.Join(dir, "file.txt")
+	os.WriteFile(f, []byte("precious data"), 0644)
+
+	err := copyFile(f, f)
+	if err == nil {
+		t.Fatal("expected error when copying file onto itself, got nil")
+	}
+
+	// Verify the file wasn't truncated
+	got, _ := os.ReadFile(f)
+	if string(got) != "precious data" {
+		t.Errorf("file was corrupted: %q", got)
+	}
+}
+
 func TestCopyFileSourceNotFound(t *testing.T) {
 	dir := t.TempDir()
 
