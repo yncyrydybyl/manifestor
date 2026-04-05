@@ -1,0 +1,506 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>manifestor — grab your latest download</title>
+  <meta name="description" content="One-keystroke file grabber. Copies the latest file from ~/Downloads with a clean name.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #0a0a0f;
+      --surface: #12121a;
+      --border: #1e1e2e;
+      --text: #e4e4ef;
+      --text-dim: #8888a0;
+      --accent: #a78bfa;
+      --accent2: #34d399;
+      --accent3: #f472b6;
+      --glow: rgba(167, 139, 250, 0.15);
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: 'Inter', system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.6;
+      overflow-x: hidden;
+    }
+
+    .container {
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 0 24px;
+    }
+
+    /* Hero */
+    .hero {
+      text-align: center;
+      padding: 100px 24px 60px;
+      position: relative;
+    }
+
+    .hero::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 50%;
+      transform: translateX(-50%);
+      width: 600px; height: 600px;
+      background: radial-gradient(circle, var(--glow) 0%, transparent 70%);
+      pointer-events: none;
+    }
+
+    .hero h1 {
+      font-size: 4rem;
+      font-weight: 800;
+      letter-spacing: -0.03em;
+      margin-bottom: 12px;
+      background: linear-gradient(135deg, var(--accent), var(--accent3), var(--accent2));
+      -webkit-background-clip: text;
+      background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .hero .tagline {
+      font-size: 1.3rem;
+      color: var(--text-dim);
+      margin-bottom: 40px;
+    }
+
+    .hero-install {
+      display: inline-block;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 16px 32px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 1.1rem;
+      color: var(--accent2);
+      cursor: pointer;
+      transition: border-color 0.2s;
+      position: relative;
+    }
+
+    .hero-install:hover { border-color: var(--accent); }
+
+    .hero-install .copy-hint {
+      position: absolute;
+      top: -28px;
+      right: 0;
+      font-size: 0.75rem;
+      color: var(--text-dim);
+      font-family: 'Inter', sans-serif;
+      opacity: 0;
+      transition: opacity 0.2s;
+    }
+
+    .hero-install:hover .copy-hint { opacity: 1; }
+
+    /* Demo */
+    .demo {
+      padding: 40px 0 80px;
+    }
+
+    .terminal {
+      background: #0d1117;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      overflow: hidden;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.9rem;
+    }
+
+    .terminal-bar {
+      background: #161b22;
+      padding: 12px 16px;
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+
+    .terminal-dot {
+      width: 12px; height: 12px;
+      border-radius: 50%;
+    }
+
+    .terminal-dot:nth-child(1) { background: #ff5f57; }
+    .terminal-dot:nth-child(2) { background: #febc2e; }
+    .terminal-dot:nth-child(3) { background: #28c840; }
+
+    .terminal-body {
+      padding: 20px 24px;
+      line-height: 1.8;
+    }
+
+    .terminal-body .prompt { color: var(--accent2); }
+    .terminal-body .cmd { color: #e4e4ef; }
+    .terminal-body .output { color: var(--text-dim); }
+    .terminal-body .file { color: var(--accent3); }
+    .terminal-body .arrow { color: var(--accent); }
+
+    /* Features */
+    .features {
+      padding: 60px 0;
+    }
+
+    .features h2 {
+      font-size: 2rem;
+      margin-bottom: 40px;
+      text-align: center;
+    }
+
+    .feature-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 20px;
+    }
+
+    .feature-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 24px;
+      transition: border-color 0.2s;
+    }
+
+    .feature-card:hover { border-color: var(--accent); }
+
+    .feature-card .icon {
+      font-size: 2rem;
+      margin-bottom: 12px;
+    }
+
+    .feature-card h3 {
+      font-size: 1.1rem;
+      margin-bottom: 8px;
+    }
+
+    .feature-card p {
+      color: var(--text-dim);
+      font-size: 0.9rem;
+    }
+
+    /* Animations section */
+    .anims {
+      padding: 60px 0;
+    }
+
+    .anims h2 {
+      font-size: 2rem;
+      margin-bottom: 16px;
+      text-align: center;
+    }
+
+    .anims .subtitle {
+      text-align: center;
+      color: var(--text-dim);
+      margin-bottom: 40px;
+    }
+
+    .anim-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 16px;
+    }
+
+    .anim-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 20px;
+      display: flex;
+      gap: 14px;
+      align-items: flex-start;
+      transition: border-color 0.2s;
+    }
+
+    .anim-card:hover { border-color: var(--accent3); }
+
+    .anim-card .anim-icon { font-size: 1.6rem; flex-shrink: 0; }
+
+    .anim-card .anim-name {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.85rem;
+      color: var(--accent);
+      margin-bottom: 4px;
+    }
+
+    .anim-card .anim-desc {
+      color: var(--text-dim);
+      font-size: 0.85rem;
+    }
+
+    /* Install section */
+    .install {
+      padding: 60px 0;
+    }
+
+    .install h2 {
+      font-size: 2rem;
+      margin-bottom: 32px;
+      text-align: center;
+    }
+
+    .install-methods {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 20px;
+    }
+
+    .install-method {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 24px;
+    }
+
+    .install-method h3 {
+      font-size: 1rem;
+      margin-bottom: 12px;
+      color: var(--accent2);
+    }
+
+    .install-method pre {
+      background: #0d1117;
+      border-radius: 8px;
+      padding: 16px;
+      overflow-x: auto;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.85rem;
+      color: var(--text);
+    }
+
+    /* Footer */
+    footer {
+      text-align: center;
+      padding: 60px 24px;
+      color: var(--text-dim);
+      font-size: 0.85rem;
+      border-top: 1px solid var(--border);
+    }
+
+    footer a {
+      color: var(--accent);
+      text-decoration: none;
+    }
+
+    footer a:hover { text-decoration: underline; }
+
+    @media (max-width: 600px) {
+      .hero h1 { font-size: 2.5rem; }
+      .hero .tagline { font-size: 1rem; }
+      .feature-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+<section class="hero">
+  <div class="container">
+    <h1>manifestor</h1>
+    <p class="tagline">One keystroke from download to project. Type <code>m</code>, done.</p>
+    <div class="hero-install" onclick="navigator.clipboard.writeText('brew install yncyrydybyl/tap/manifestor')">
+      <span class="copy-hint">click to copy</span>
+      brew install yncyrydybyl/tap/manifestor
+    </div>
+  </div>
+</section>
+
+<section class="demo">
+  <div class="container">
+    <div class="terminal">
+      <div class="terminal-bar">
+        <div class="terminal-dot"></div>
+        <div class="terminal-dot"></div>
+        <div class="terminal-dot"></div>
+      </div>
+      <div class="terminal-body">
+        <div><span class="prompt">~/project $</span> <span class="cmd">m</span></div>
+        <div class="output">
+          <span class="arrow">🔥</span>
+          <span class="file">screenshot-2026-04-05-at-14.32.07.png</span>
+          <span class="arrow">forged 🔥</span>
+        </div>
+        <div class="output">./screenshot-2026-04-05-at-14.32.07.png</div>
+        <br>
+        <div><span class="prompt">~/project $</span> <span class="cmd">m ./assets</span></div>
+        <div class="output">
+          <span class="arrow">🌀</span>
+          <span class="file">api-spec.json</span>
+          <span class="arrow">emerged from the portal 🌀</span>
+        </div>
+        <div class="output">./assets/api-spec.json</div>
+        <br>
+        <div><span class="prompt">~/project $</span> <span class="cmd">mm</span></div>
+        <div class="output">./design-final-v3.fig</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="features">
+  <div class="container">
+    <h2>What it does</h2>
+    <div class="feature-grid">
+      <div class="feature-card">
+        <div class="icon">⚡</div>
+        <h3>One keystroke</h3>
+        <p>Type <code>m</code>. Your latest download lands in the current directory with a clean name.</p>
+      </div>
+      <div class="feature-card">
+        <div class="icon">🧹</div>
+        <h3>Clean names</h3>
+        <p>Screenshot 2026-04-05 at 14.32.07.png becomes screenshot-2026-04-05-at-14.32.07.png</p>
+      </div>
+      <div class="feature-card">
+        <div class="icon">🛡️</div>
+        <h3>Staleness guard</h3>
+        <p>If the newest download is over 8 hours old, asks for confirmation. Skip with <code>mm</code>.</p>
+      </div>
+      <div class="feature-card">
+        <div class="icon">🎨</div>
+        <h3>9 animations</h3>
+        <p>Every copy plays a random manifestation animation. Rainbow beams, portals, forging in flames.</p>
+      </div>
+      <div class="feature-card">
+        <div class="icon">🐚</div>
+        <h3>Shell completions</h3>
+        <p>Tab completion for bash, zsh, and fish. All flags and animation names.</p>
+      </div>
+      <div class="feature-card">
+        <div class="icon">🍺</div>
+        <h3>Brew ready</h3>
+        <p>brew install, completions auto-installed, mm symlink set up. Zero config.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="anims">
+  <div class="container">
+    <h2>Manifestation animations</h2>
+    <p class="subtitle">A random animation plays after each copy. Pick one with <code>--anim &lt;name&gt;</code>.</p>
+    <div class="anim-grid">
+      <div class="anim-card">
+        <div class="anim-icon">🌈</div>
+        <div>
+          <div class="anim-name">rainbow-beam</div>
+          <div class="anim-desc">Full-width rainbow bar with sparkle burst</div>
+        </div>
+      </div>
+      <div class="anim-card">
+        <div class="anim-icon">🌹</div>
+        <div>
+          <div class="anim-name">growing-rose</div>
+          <div class="anim-desc">A rose blooms in the terminal, petal by petal</div>
+        </div>
+      </div>
+      <div class="anim-card">
+        <div class="anim-icon">⚡</div>
+        <div>
+          <div class="anim-name">teleport</div>
+          <div class="anim-desc">Particles scatter and reassemble at destination</div>
+        </div>
+      </div>
+      <div class="anim-card">
+        <div class="anim-icon">🌀</div>
+        <div>
+          <div class="anim-name">portal</div>
+          <div class="anim-desc">A swirling portal opens and the file emerges</div>
+        </div>
+      </div>
+      <div class="anim-card">
+        <div class="anim-icon">💎</div>
+        <div>
+          <div class="anim-name">crystallize</div>
+          <div class="anim-desc">Crystals form and shatter to reveal the file</div>
+        </div>
+      </div>
+      <div class="anim-card">
+        <div class="anim-icon">🎆</div>
+        <div>
+          <div class="anim-name">emoji-rain</div>
+          <div class="anim-desc">Cascading emoji rain with lightning reveal</div>
+        </div>
+      </div>
+      <div class="anim-card">
+        <div class="anim-icon">🟢</div>
+        <div>
+          <div class="anim-name">matrix-manifest</div>
+          <div class="anim-desc">Matrix-style falling glyphs that form the filename</div>
+        </div>
+      </div>
+      <div class="anim-card">
+        <div class="anim-icon">🔥</div>
+        <div>
+          <div class="anim-name">fire-forge</div>
+          <div class="anim-desc">File is forged in flames</div>
+        </div>
+      </div>
+      <div class="anim-card">
+        <div class="anim-icon">🚀</div>
+        <div>
+          <div class="anim-name">starfield</div>
+          <div class="anim-desc">Warp-speed starfield with cosmic arrival</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="install">
+  <div class="container">
+    <h2>Install</h2>
+    <div class="install-methods">
+      <div class="install-method">
+        <h3>Homebrew</h3>
+        <pre>brew install yncyrydybyl/tap/manifestor</pre>
+      </div>
+      <div class="install-method">
+        <h3>From source</h3>
+        <pre>git clone https://github.com/yncyrydybyl/manifestor.git
+cd manifestor
+make install</pre>
+      </div>
+      <div class="install-method">
+        <h3>Shell completions</h3>
+        <pre># bash
+eval "$(m completion bash)"
+
+# zsh
+eval "$(m completion zsh)"
+
+# fish
+m completion fish > \
+  ~/.config/fish/completions/m.fish</pre>
+      </div>
+      <div class="install-method">
+        <h3>Binary download</h3>
+        <pre># Check releases for your platform:
+# github.com/yncyrydybyl/manifestor/releases
+curl -sL [release-url] -o m
+chmod +x m
+sudo mv m /usr/local/bin/</pre>
+      </div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="container">
+    <p>
+      <a href="https://github.com/yncyrydybyl/manifestor">GitHub</a>
+      &nbsp;&middot;&nbsp;
+      <a href="https://github.com/yncyrydybyl/manifestor/releases">Releases</a>
+      &nbsp;&middot;&nbsp;
+      MIT License
+    </p>
+  </div>
+</footer>
+
+</body>
+</html>
