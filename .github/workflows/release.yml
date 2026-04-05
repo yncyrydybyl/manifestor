@@ -57,7 +57,7 @@ jobs:
           VERSION=${GITHUB_REF_NAME#v}
           echo "version=${VERSION}" >> $GITHUB_OUTPUT
           URL="https://github.com/yncyrydybyl/manifestor/archive/refs/tags/${GITHUB_REF_NAME}.tar.gz"
-          SHA=$(curl -sL "$URL" | sha256sum | cut -d' ' -f1)
+          SHA=$(curl -sfL --retry 3 "$URL" | sha256sum | cut -d' ' -f1)
           echo "sha256=${SHA}" >> $GITHUB_OUTPUT
 
       - name: Update tap
