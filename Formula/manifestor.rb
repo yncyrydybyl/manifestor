@@ -13,9 +13,12 @@ class Manifestor < Formula
            "-o", bin/"m",
            "./cmd/m"
     bin.install_symlink "m" => "mm"
+
+    generate_completions_from_executable(bin/"m", "completion")
   end
 
   test do
     assert_match version.to_s, shell_output("#{bin}/m --version")
+    assert_match "COMP_WORDS", shell_output("#{bin}/m completion bash")
   end
 end

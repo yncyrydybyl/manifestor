@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+## 0.1.3.0 - 2026-04-05
+
+### Added
+- Shell completions for bash, zsh, and fish via `m completion <shell>`
+- Tab-complete all flags and animation names
+- Homebrew formula auto-installs completions
+
 ## 0.1.2.0 - 2026-04-05
 
 ### Added
