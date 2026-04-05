@@ -10,6 +10,7 @@ import (
 
 	"github.com/yncyrydybyl/manifestor/internal/anim"
 	"github.com/yncyrydybyl/manifestor/internal/grab"
+	"golang.org/x/term"
 )
 
 var version = "dev"
@@ -36,10 +37,12 @@ func main() {
 		case "--no-anim":
 			noAnim = true
 		case "--anim":
-			if i+1 < len(args) {
-				i++
-				animName = args[i]
+			if i+1 >= len(args) || strings.HasPrefix(args[i+1], "-") {
+				fmt.Fprintln(os.Stderr, "error: --anim requires an animation name (use --list-anims to see available)")
+				os.Exit(1)
 			}
+			i++
+			animName = args[i]
 		case "--list-anims":
 			listAnims = true
 		default:
@@ -76,8 +79,8 @@ func main() {
 		os.Exit(1)
 	}
 
-	// Play animation after successful copy
-	if !noAnim {
+	// Play animation after successful copy (only if stderr is a TTY)
+	if !noAnim && term.IsTerminal(int(os.Stderr.Fd())) {
 		name := filepath.Base(result.Dest)
 		playAnimation(animName, name)
 	}
