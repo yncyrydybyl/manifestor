@@ -2,6 +2,16 @@
 
 ## Unreleased
 
+## 0.1.2.0 - 2026-04-05
+
+### Added
+- Manifestation animations: 9 unique terminal animations play after each copy
+- `--anim <name>` to pick a specific animation (e.g., `m --anim fire-forge`)
+- `--no-anim` to skip the animation
+- `--list-anims` to see all available animations
+- Animations: rainbow-beam, growing-rose, teleport, portal, crystallize, emoji-rain, matrix-manifest, fire-forge, starfield
+- Random animation selected by default for variety
+
 ## 0.1.1.0 - 2026-04-05
 
 ### Added
