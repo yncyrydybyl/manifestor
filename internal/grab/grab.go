@@ -6,8 +6,12 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"sort"
 	"time"
 )
+
+// MaxBatch is the upper bound for batch grab counts.
+const MaxBatch = 254
 
 // Result holds the newest file info before copying.
 type Result struct {
@@ -45,6 +49,40 @@ func (r *Result) Copy() error {
 		return fmt.Errorf("copy %s -> %s: %w", r.Source, r.Dest, err)
 	}
 	return nil
+}
+
+// FindN locates the n most recently modified files in ~/Downloads, newest
+// first. If fewer than n files exist, it returns what is available. The Age
+// of each Result is computed from the file's mtime.
+func FindN(n int, dest string) ([]*Result, error) {
+	if n < 1 {
+		return nil, fmt.Errorf("count must be >= 1, got %d", n)
+	}
+	if n > MaxBatch {
+		return nil, fmt.Errorf("count too large: %d (max %d)", n, MaxBatch)
+	}
+
+	dir, err := downloadsDir()
+	if err != nil {
+		return nil, err
+	}
+
+	files, err := newestN(dir, n)
+	if err != nil {
+		return nil, err
+	}
+
+	results := make([]*Result, 0, len(files))
+	now := time.Now()
+	for _, f := range files {
+		name := Sanitize(filepath.Base(f.path))
+		results = append(results, &Result{
+			Source: f.path,
+			Dest:   filepath.Join(dest, name),
+			Age:    now.Sub(f.mtime),
+		})
+	}
+	return results, nil
 }
 
 // StaleThreshold is the age after which a file is considered stale.
@@ -89,6 +127,46 @@ func newestFile(dir string) (string, time.Time, error) {
 		return "", time.Time{}, fmt.Errorf("no files found in %s", dir)
 	}
 	return newest, newestTime, nil
+}
+
+type fileEntry struct {
+	path  string
+	mtime time.Time
+}
+
+func newestN(dir string, n int) ([]fileEntry, error) {
+	entries, err := os.ReadDir(dir)
+	if err != nil {
+		return nil, fmt.Errorf("read %s: %w", dir, err)
+	}
+
+	files := make([]fileEntry, 0, len(entries))
+	for _, e := range entries {
+		if e.IsDir() || e.Name()[0] == '.' {
+			continue
+		}
+		info, err := e.Info()
+		if err != nil {
+			continue
+		}
+		files = append(files, fileEntry{
+			path:  filepath.Join(dir, e.Name()),
+			mtime: info.ModTime(),
+		})
+	}
+
+	if len(files) == 0 {
+		return nil, fmt.Errorf("no files found in %s", dir)
+	}
+
+	sort.Slice(files, func(i, j int) bool {
+		return files[i].mtime.After(files[j].mtime)
+	})
+
+	if n > len(files) {
+		n = len(files)
+	}
+	return files[:n], nil
 }
 
 func copyFile(src, dst string) error {
