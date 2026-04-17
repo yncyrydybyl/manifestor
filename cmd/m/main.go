@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"time"
 
@@ -24,6 +25,7 @@ func main() {
 	var animName string
 	noAnim := false
 	listAnims := false
+	count := 1
 
 	for i := 0; i < len(args); i++ {
 		switch args[i] {
@@ -55,6 +57,14 @@ func main() {
 			}
 			return
 		default:
+			if n, ok := parseCount(args[i]); ok {
+				if err := validateCount(n); err != nil {
+					fmt.Fprintf(os.Stderr, "error: %s\n", err)
+					os.Exit(1)
+				}
+				count = n
+				continue
+			}
 			if dest == "" {
 				dest = args[i]
 			}
@@ -68,6 +78,11 @@ func main() {
 
 	if dest == "" {
 		dest = "."
+	}
+
+	if count > 1 {
+		runBatch(count, dest, force)
+		return
 	}
 
 	result, err := grab.Find(dest)
@@ -95,6 +110,58 @@ func main() {
 	}
 
 	fmt.Println(result.Dest)
+}
+
+// parseCount recognises "-N" where N is a positive integer. Returns (n, true)
+// on match, else (0, false). It does not validate range — callers should.
+func parseCount(arg string) (int, bool) {
+	if len(arg) < 2 || arg[0] != '-' {
+		return 0, false
+	}
+	n, err := strconv.Atoi(arg[1:])
+	if err != nil {
+		return 0, false
+	}
+	return n, true
+}
+
+func validateCount(n int) error {
+	if n < 1 {
+		return fmt.Errorf("invalid count: -%d (must be >= 1)", n)
+	}
+	if n > grab.MaxBatch {
+		return fmt.Errorf("-%d too large (max %d)", n, grab.MaxBatch)
+	}
+	return nil
+}
+
+func runBatch(n int, dest string, force bool) {
+	results, err := grab.FindN(n, dest)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "error: %s\n", err)
+		os.Exit(1)
+	}
+
+	if !force && len(results) > 0 && results[0].Age > grab.StaleThreshold {
+		if !confirmStale(results[0]) {
+			fmt.Fprintln(os.Stderr, "aborted.")
+			os.Exit(1)
+		}
+	}
+
+	copied := 0
+	for _, r := range results {
+		if err := r.Copy(); err != nil {
+			fmt.Fprintf(os.Stderr, "error: %s\n", err)
+			continue
+		}
+		fmt.Println(r.Dest)
+		copied++
+	}
+
+	if copied < n {
+		fmt.Fprintf(os.Stderr, "grabbed %d of %d requested (only %d available)\n", copied, n, len(results))
+	}
 }
 
 func playAnimation(name, filename string) {
@@ -186,6 +253,7 @@ If the newest file is older than 8 hours, you'll be asked to confirm.
 To skip the check, use --force or invoke as 'mm'.
 
 Options:
+  -N                 grab the N newest files (1-254); e.g. -5, -200
   -f, --force        skip the staleness check
   --anim <name>      play a specific animation
   --no-anim          skip the animation
@@ -199,6 +267,8 @@ Commands:
 Examples:
   m                          copy latest download here
   m ./assets                 copy latest download to ./assets
+  m -5                       copy the 5 newest downloads here
+  m -200 ./img               copy the 200 newest downloads to ./img
   mm                         force mode (no confirmation)
   m --anim rainbow-beam      use a specific animation
   m --anim fire-forge .      forge it in flames

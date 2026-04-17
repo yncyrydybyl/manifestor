@@ -151,3 +151,91 @@ func TestResultIsStale(t *testing.T) {
 		t.Error("10h-old file should be stale")
 	}
 }
+
+func TestNewestNOrdering(t *testing.T) {
+	dir := t.TempDir()
+
+	names := []string{"a.txt", "b.txt", "c.txt", "d.txt"}
+	for _, n := range names {
+		os.WriteFile(filepath.Join(dir, n), []byte(n), 0644)
+		time.Sleep(10 * time.Millisecond)
+	}
+
+	files, err := newestN(dir, 3)
+	if err != nil {
+		t.Fatalf("newestN error: %v", err)
+	}
+	if len(files) != 3 {
+		t.Fatalf("got %d files, want 3", len(files))
+	}
+	wantOrder := []string{"d.txt", "c.txt", "b.txt"}
+	for i, f := range files {
+		if filepath.Base(f.path) != wantOrder[i] {
+			t.Errorf("files[%d] = %q, want %q", i, filepath.Base(f.path), wantOrder[i])
+		}
+	}
+}
+
+func TestNewestNFewerAvailable(t *testing.T) {
+	dir := t.TempDir()
+
+	os.WriteFile(filepath.Join(dir, "a.txt"), []byte("a"), 0644)
+	time.Sleep(10 * time.Millisecond)
+	os.WriteFile(filepath.Join(dir, "b.txt"), []byte("b"), 0644)
+
+	files, err := newestN(dir, 10)
+	if err != nil {
+		t.Fatalf("newestN error: %v", err)
+	}
+	if len(files) != 2 {
+		t.Errorf("got %d files, want 2 (directory had fewer than requested)", len(files))
+	}
+}
+
+func TestNewestNSkipsDirsAndDotfiles(t *testing.T) {
+	dir := t.TempDir()
+
+	os.Mkdir(filepath.Join(dir, "subdir"), 0755)
+	os.WriteFile(filepath.Join(dir, ".hidden"), []byte("x"), 0644)
+	time.Sleep(10 * time.Millisecond)
+	os.WriteFile(filepath.Join(dir, "visible.txt"), []byte("v"), 0644)
+
+	files, err := newestN(dir, 5)
+	if err != nil {
+		t.Fatalf("newestN error: %v", err)
+	}
+	if len(files) != 1 || filepath.Base(files[0].path) != "visible.txt" {
+		t.Errorf("got %+v, want only visible.txt", files)
+	}
+}
+
+func TestNewestNEmptyDir(t *testing.T) {
+	dir := t.TempDir()
+	if _, err := newestN(dir, 3); err == nil {
+		t.Fatal("expected error for empty dir")
+	}
+}
+
+func TestFindNValidation(t *testing.T) {
+	cases := []struct {
+		n       int
+		wantErr bool
+	}{
+		{0, true},
+		{-1, true},
+		{MaxBatch + 1, true},
+		{255, true},
+	}
+	for _, c := range cases {
+		_, err := FindN(c.n, ".")
+		if (err != nil) != c.wantErr {
+			t.Errorf("FindN(%d) err=%v, wantErr=%v", c.n, err, c.wantErr)
+		}
+	}
+}
+
+func TestMaxBatch(t *testing.T) {
+	if MaxBatch != 254 {
+		t.Errorf("MaxBatch = %d, want 254", MaxBatch)
+	}
+}
