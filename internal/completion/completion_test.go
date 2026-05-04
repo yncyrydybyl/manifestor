@@ -16,11 +16,14 @@ func TestBashContainsAnimNames(t *testing.T) {
 	if !strings.Contains(out, "complete -o default -F _m_completions mm") {
 		t.Error("bash completion missing mm alias")
 	}
+	if !strings.Contains(out, "complete -o default -F _m_completions manifestor") {
+		t.Error("bash completion missing manifestor canonical name")
+	}
 }
 
 func TestZshContainsAnimDescriptions(t *testing.T) {
 	out := Zsh()
-	if !strings.Contains(out, "#compdef m mm") {
+	if !strings.Contains(out, "#compdef m mm manifestor") {
 		t.Error("zsh completion missing compdef header")
 	}
 	if !strings.Contains(out, "rainbow-beam") {
@@ -41,6 +44,9 @@ func TestFishContainsBothCommands(t *testing.T) {
 	}
 	if !strings.Contains(out, "complete -c mm ") {
 		t.Error("fish completion missing mm command")
+	}
+	if !strings.Contains(out, "complete -c manifestor ") {
+		t.Error("fish completion missing manifestor command")
 	}
 	if !strings.Contains(out, "rainbow-beam") {
 		t.Error("fish completion missing animation names")

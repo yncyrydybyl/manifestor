@@ -50,6 +50,7 @@ _m_completions() {
 
 complete -o default -F _m_completions m
 complete -o default -F _m_completions mm
+complete -o default -F _m_completions manifestor
 `, animNames())
 }
 
@@ -60,7 +61,7 @@ func Zsh() string {
 		animList.WriteString(fmt.Sprintf("        '%s:%s'\n", a.Name, a.Desc))
 	}
 
-	return fmt.Sprintf(`#compdef m mm
+	return fmt.Sprintf(`#compdef m mm manifestor
 # zsh completion for m (manifestor)
 # Add to ~/.zshrc:  eval "$(m completion zsh)"
 # Or save to a file in your $fpath:
@@ -101,6 +102,8 @@ func Fish() string {
 			"complete -c m -l anim -xa '%s' -d '%s'\n", a.Name, a.Desc))
 		animCompletions.WriteString(fmt.Sprintf(
 			"complete -c mm -l anim -xa '%s' -d '%s'\n", a.Name, a.Desc))
+		animCompletions.WriteString(fmt.Sprintf(
+			"complete -c manifestor -l anim -xa '%s' -d '%s'\n", a.Name, a.Desc))
 	}
 
 	return fmt.Sprintf(`# fish completion for m (manifestor)
@@ -121,6 +124,15 @@ complete -c mm -s v -l version -d 'Show version'
 complete -c mm -s f -l force -d 'Skip staleness check'
 complete -c mm -l no-anim -d 'Skip animation'
 complete -c mm -l list-anims -d 'List available animations'
+
+# Same for manifestor canonical name
+complete -c manifestor -s h -l help -d 'Show help'
+complete -c manifestor -s v -l version -d 'Show version'
+complete -c manifestor -s f -l force -d 'Skip staleness check'
+complete -c manifestor -l no-anim -d 'Skip animation'
+complete -c manifestor -l list-anims -d 'List available animations'
+complete -c manifestor -a 'completion' -d 'Generate shell completions'
+complete -c manifestor -n '__fish_seen_subcommand_from completion' -xa 'bash zsh fish'
 
 # Animation names
 %s`, animCompletions.String())
