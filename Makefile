@@ -4,8 +4,9 @@ LDFLAGS := -ldflags "-s -w -X main.version=$(VERSION)"
 .PHONY: build test lint clean install
 
 build:
-	go build $(LDFLAGS) -o bin/m ./cmd/m
-	ln -sf m bin/mm
+	go build $(LDFLAGS) -o bin/manifestor ./cmd/m
+	ln -sf manifestor bin/m
+	ln -sf manifestor bin/mm
 
 test:
 	go test ./... -v
@@ -17,5 +18,7 @@ clean:
 	rm -rf bin/
 
 install: build
-	cp bin/m $(GOPATH)/bin/m 2>/dev/null || cp bin/m $(HOME)/go/bin/m
-	ln -sf m $(GOPATH)/bin/mm 2>/dev/null || ln -sf m $(HOME)/go/bin/mm
+	install -d $(or $(GOPATH),$(HOME)/go)/bin
+	cp bin/manifestor $(or $(GOPATH),$(HOME)/go)/bin/manifestor
+	ln -sf manifestor $(or $(GOPATH),$(HOME)/go)/bin/m
+	ln -sf manifestor $(or $(GOPATH),$(HOME)/go)/bin/mm
