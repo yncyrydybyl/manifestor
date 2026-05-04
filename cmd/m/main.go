@@ -22,6 +22,7 @@ func main() {
 
 	var dest string
 	var animName string
+	animSize := anim.OneLiner
 	noAnim := false
 	listAnims := false
 
@@ -44,6 +45,18 @@ func main() {
 			}
 			i++
 			animName = args[i]
+		case "--anim-size":
+			if i+1 >= len(args) || strings.HasPrefix(args[i+1], "-") {
+				fmt.Fprintln(os.Stderr, "error: --anim-size requires a value (1, 5, or full)")
+				os.Exit(1)
+			}
+			i++
+			s, ok := anim.ParseSize(args[i])
+			if !ok {
+				fmt.Fprintf(os.Stderr, "error: invalid --anim-size %q (expected: 1, 5, or full)\n", args[i])
+				os.Exit(1)
+			}
+			animSize = s
 		case "--list-anims":
 			listAnims = true
 		case "completion":
@@ -91,13 +104,13 @@ func main() {
 	// Play animation after successful copy (only if stderr is a TTY)
 	if !noAnim && term.IsTerminal(int(os.Stderr.Fd())) {
 		name := filepath.Base(result.Dest)
-		playAnimation(animName, name)
+		playAnimation(animName, name, animSize)
 	}
 
 	fmt.Println(result.Dest)
 }
 
-func playAnimation(name, filename string) {
+func playAnimation(name, filename string, size anim.Size) {
 	var a *anim.Animation
 	if name != "" {
 		a = anim.Get(name)
@@ -106,10 +119,10 @@ func playAnimation(name, filename string) {
 			return
 		}
 	} else {
-		a = anim.Random()
+		a = anim.RandomForSize(size)
 	}
 	if a != nil {
-		a.Play(filename)
+		a.Play(filename, a.BestSize(size))
 	}
 }
 
@@ -131,11 +144,16 @@ func printAnims() {
 	fmt.Println("Available animations:")
 	fmt.Println()
 	for _, a := range anim.List() {
-		fmt.Printf("  %-20s %s\n", a.Name, a.Desc)
+		var sizes []string
+		for _, s := range a.Sizes {
+			sizes = append(sizes, s.String())
+		}
+		fmt.Printf("  %-20s [%s]  %s\n", a.Name, strings.Join(sizes, ","), a.Desc)
 	}
 	fmt.Println()
 	fmt.Println("Usage: m --anim <name>")
-	fmt.Println("       m --no-anim       (skip animation)")
+	fmt.Println("       m --anim-size <1|5|full>   (default: 1)")
+	fmt.Println("       m --no-anim                (skip animation)")
 }
 
 // isForceMode returns true if the binary was invoked as "mm".
@@ -188,6 +206,7 @@ To skip the check, use --force or invoke as 'mm'.
 Options:
   -f, --force        skip the staleness check
   --anim <name>      play a specific animation
+  --anim-size <s>    1 (default), 5, or full
   --no-anim          skip the animation
   --list-anims       show available animations
   -h, --help         show this help
@@ -202,6 +221,8 @@ Examples:
   mm                         force mode (no confirmation)
   m --anim rainbow-beam      use a specific animation
   m --anim fire-forge .      forge it in flames
+  m --anim-size 5            5-line animation
+  m --anim-size full         full-screen animation
   m --no-anim                just copy, no flair
 
 Shell completions:

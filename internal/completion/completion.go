@@ -28,12 +28,16 @@ _m_completions() {
     cur="${COMP_WORDS[COMP_CWORD]}"
     prev="${COMP_WORDS[COMP_CWORD-1]}"
 
-    opts="--help --version --force --anim --no-anim --list-anims"
+    opts="--help --version --force --anim --anim-size --no-anim --list-anims"
     anims="%s"
 
     case "${prev}" in
         --anim)
             COMPREPLY=( $(compgen -W "${anims}" -- "${cur}") )
+            return 0
+            ;;
+        --anim-size)
+            COMPREPLY=( $(compgen -W "1 5 full" -- "${cur}") )
             return 0
             ;;
     esac
@@ -78,6 +82,7 @@ _m() {
         '(-v --version)'{-v,--version}'[show version]' \
         '(-f --force)'{-f,--force}'[skip staleness check]' \
         '--anim[play a specific animation]:animation:->anims' \
+        '--anim-size[animation size mode]:size:(1 5 full)' \
         '--no-anim[skip animation]' \
         '--list-anims[list available animations]' \
         'completion[generate shell completions]:shell:(bash zsh fish)' \
@@ -115,6 +120,7 @@ complete -c m -s v -l version -d 'Show version'
 complete -c m -s f -l force -d 'Skip staleness check'
 complete -c m -l no-anim -d 'Skip animation'
 complete -c m -l list-anims -d 'List available animations'
+complete -c m -l anim-size -xa '1 5 full' -d 'Animation size mode'
 complete -c m -a 'completion' -d 'Generate shell completions'
 complete -c m -n '__fish_seen_subcommand_from completion' -xa 'bash zsh fish'
 
@@ -124,6 +130,7 @@ complete -c mm -s v -l version -d 'Show version'
 complete -c mm -s f -l force -d 'Skip staleness check'
 complete -c mm -l no-anim -d 'Skip animation'
 complete -c mm -l list-anims -d 'List available animations'
+complete -c mm -l anim-size -xa '1 5 full' -d 'Animation size mode'
 
 # Same for manifestor canonical name
 complete -c manifestor -s h -l help -d 'Show help'
@@ -131,6 +138,7 @@ complete -c manifestor -s v -l version -d 'Show version'
 complete -c manifestor -s f -l force -d 'Skip staleness check'
 complete -c manifestor -l no-anim -d 'Skip animation'
 complete -c manifestor -l list-anims -d 'List available animations'
+complete -c manifestor -l anim-size -xa '1 5 full' -d 'Animation size mode'
 complete -c manifestor -a 'completion' -d 'Generate shell completions'
 complete -c manifestor -n '__fish_seen_subcommand_from completion' -xa 'bash zsh fish'
 

@@ -19,6 +19,12 @@ func TestBashContainsAnimNames(t *testing.T) {
 	if !strings.Contains(out, "complete -o default -F _m_completions manifestor") {
 		t.Error("bash completion missing manifestor canonical name")
 	}
+	if !strings.Contains(out, "--anim-size") {
+		t.Error("bash completion missing --anim-size flag")
+	}
+	if !strings.Contains(out, `compgen -W "1 5 full"`) {
+		t.Error("bash completion missing --anim-size value completion")
+	}
 }
 
 func TestZshContainsAnimDescriptions(t *testing.T) {
@@ -34,6 +40,9 @@ func TestZshContainsAnimDescriptions(t *testing.T) {
 	}
 	if !strings.Contains(out, "completion[generate shell completions]") {
 		t.Error("zsh completion missing completion subcommand")
+	}
+	if !strings.Contains(out, "--anim-size[animation size mode]") {
+		t.Error("zsh completion missing --anim-size flag")
 	}
 }
 
@@ -53,6 +62,9 @@ func TestFishContainsBothCommands(t *testing.T) {
 	}
 	if !strings.Contains(out, "'bash zsh fish'") {
 		t.Error("fish completion missing shell subcommands")
+	}
+	if !strings.Contains(out, "anim-size") {
+		t.Error("fish completion missing --anim-size flag")
 	}
 }
 
